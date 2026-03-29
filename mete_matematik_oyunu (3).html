@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matematik Arena ⚡</title>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --gold:#FFD93D;--gold-dark:#c9a800;
+  --blue:#1B9CFC;--red:#FF4757;--green:#26de81;--purple:#8854d0;
+  --bg:#0f1923;--bg2:#1a2634;--bg3:#243447;
+  --txt:#fff;--muted:#8fa3b1;
+}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;}
+.game{width:100%;max-width:460px;border-radius:20px;overflow:hidden;border:2px solid #2a3f55;min-height:600px;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+.screen{display:none;flex-direction:column;flex:1;}
+.screen.active{display:flex;}
+
+/* KARAKTER SEÇİM */
+.char-screen{background:var(--bg);padding:22px;flex:1;display:flex;flex-direction:column;}
+.gtitle{font-family:'Lilita One',cursive;font-size:28px;text-align:center;color:var(--gold);text-shadow:0 2px 0 var(--gold-dark);margin-bottom:3px;}
+.gsub{text-align:center;font-size:13px;color:var(--muted);margin-bottom:18px;}
+.chars-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;max-height:360px;overflow-y:auto;padding-right:2px;}
+.chars-grid::-webkit-scrollbar{width:4px;}
+.chars-grid::-webkit-scrollbar-track{background:var(--bg2);}
+.chars-grid::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:4px;}
+.char-card{background:var(--bg2);border-radius:14px;border:2px solid transparent;padding:14px 8px;text-align:center;cursor:pointer;transition:all .18s;}
+.char-card:hover{border-color:var(--gold);transform:translateY(-3px);}
+.char-card.sel{border-color:var(--gold);background:var(--bg3);}
+.cemoji{font-size:36px;display:block;margin-bottom:5px;}
+.cname{font-size:12px;font-weight:800;}
+.cdesc{font-size:10px;color:var(--muted);margin-top:2px;}
+.start-btn{background:var(--gold);color:#111;border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:800;font-family:'Nunito',sans-serif;cursor:pointer;width:100%;transition:.15s;letter-spacing:.5px;}
+.start-btn:hover{background:var(--gold-dark);}
+.start-btn:disabled{opacity:.35;cursor:default;}
+
+/* HUD */
+.hud{background:var(--bg2);padding:10px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #2a3f55;flex-shrink:0;}
+.hchar{font-size:24px;}
+.hname{font-size:13px;font-weight:800;color:var(--gold);}
+.hlvl{font-size:10px;color:var(--muted);}
+.hmid{flex:1;text-align:center;}
+.hsoru{font-size:11px;color:var(--muted);}
+.hpuan{font-size:18px;font-weight:800;color:var(--gold);}
+.hright{display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+.can-row{display:flex;gap:3px;}
+.can{font-size:16px;transition:.3s;}
+.can.lost{opacity:.15;filter:grayscale(1);}
+.timer-wrap{background:var(--bg3);border-radius:8px;padding:3px 10px;display:flex;align-items:center;gap:5px;font-size:15px;font-weight:800;font-family:'Lilita One',cursive;}
+.urgent{color:var(--red);animation:blink .5s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.xpbar{height:4px;background:var(--bg3);flex-shrink:0;}
+.xpfill{height:100%;background:linear-gradient(90deg,var(--blue),var(--purple));transition:width .4s;}
+
+/* ARENA */
+.arena{flex:1;background:var(--bg);padding:18px 16px;display:flex;flex-direction:column;gap:12px;}
+.lvl-row{display:flex;gap:7px;align-items:center;}
+.lvl-pill{background:var(--purple);color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:20px;}
+.konu-pill{background:var(--bg3);color:var(--muted);font-size:11px;padding:3px 10px;border-radius:20px;}
+.soru-box{background:var(--bg2);border-radius:16px;border:1.5px solid #2a3f55;padding:20px;text-align:center;}
+.cbig{font-size:52px;display:block;animation:float 3s ease-in-out infinite;margin-bottom:10px;}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.stxt{font-size:17px;font-weight:800;line-height:1.45;}
+.cevaplar{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.cbtn{background:var(--bg2);border:2px solid #2a3f55;border-radius:14px;padding:15px;font-size:20px;font-weight:800;color:var(--txt);cursor:pointer;font-family:'Nunito',sans-serif;transition:.15s;}
+.cbtn:hover:not(:disabled){border-color:var(--blue);background:var(--bg3);transform:scale(1.04);}
+.cbtn.dogru{border-color:var(--green);background:#0b2a1a;color:var(--green);}
+.cbtn.yanlis{border-color:var(--red);background:#2a0b0b;color:var(--red);}
+.cbtn:disabled{cursor:default;}
+.fb{border-radius:12px;padding:11px 16px;text-align:center;font-size:14px;font-weight:700;display:none;}
+.fb.dogru{background:#0b2a1a;border:1.5px solid var(--green);color:var(--green);}
+.fb.yanlis{background:#2a0b0b;border:1.5px solid var(--red);color:var(--red);}
+
+/* ARA EKRANLAR */
+.mid-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:30px;background:var(--bg);text-align:center;}
+.mtitle{font-family:'Lilita One',cursive;font-size:30px;color:var(--gold);}
+.mtitle.red{color:var(--red);}
+.msub{font-size:14px;color:var(--muted);}
+.mstars{font-size:30px;letter-spacing:5px;}
+.mbtn{border:none;border-radius:14px;padding:14px 40px;font-size:16px;font-weight:800;font-family:'Nunito',sans-serif;cursor:pointer;transition:.15s;}
+.mbtn:hover{transform:translateY(-2px);}
+.mbtn-blue{background:var(--blue);color:#fff;}
+.mbtn-red{background:var(--red);color:#fff;}
+.mbtn-gold{background:var(--gold);color:#111;}
+.stats-grid{background:var(--bg2);border-radius:14px;padding:16px;width:100%;display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.snum{font-size:24px;font-weight:800;color:var(--gold);}
+.slbl{font-size:11px;color:var(--muted);margin-top:2px;}
+
+@keyframes pop{0%{transform:scale(0)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+.pop-anim{animation:pop .5s ease;}
+</style>
+</head>
+<body>
+<div class="game">
+
+  <!-- KARAKTER SEÇİM -->
+  <div class="screen active" id="s-char">
+    <div class="char-screen">
+      <div class="gtitle">⚡ Matematik Arena</div>
+      <div class="gsub">Mete, karakterini seç — Zaman Ölçme!</div>
+      <div class="chars-grid">
+        <div class="char-card" onclick="pick(this,'🤠','Shelly')"><span class="cemoji">🤠</span><div class="cname">Shelly</div><div class="cdesc">Hasar</div></div>
+        <div class="char-card" onclick="pick(this,'🦊','Colt')"><span class="cemoji">🦊</span><div class="cname">Colt</div><div class="cdesc">Hasar</div></div>
+        <div class="char-card" onclick="pick(this,'🐺','Bull')"><span class="cemoji">🐺</span><div class="cname">Bull</div><div class="cdesc">Tank</div></div>
+        <div class="char-card" onclick="pick(this,'🌵','Spike')"><span class="cemoji">🌵</span><div class="cname">Spike</div><div class="cdesc">Hasar</div></div>
+        <div class="char-card" onclick="pick(this,'🤖','Brock')"><span class="cemoji">🤖</span><div class="cname">Brock</div><div class="cdesc">Nişancı</div></div>
+        <div class="char-card" onclick="pick(this,'🦁','Leon')"><span class="cemoji">🦁</span><div class="cname">Leon</div><div class="cdesc">Suikastçı</div></div>
+        <div class="char-card" onclick="pick(this,'🎸','Frank')"><span class="cemoji">🎸</span><div class="cname">Frank</div><div class="cdesc">Tank</div></div>
+        <div class="char-card" onclick="pick(this,'🦅','Edgar')"><span class="cemoji">🦅</span><div class="cname">Edgar</div><div class="cdesc">Suikastçı</div></div>
+        <div class="char-card" onclick="pick(this,'🌪️','Kaze')"><span class="cemoji">🌪️</span><div class="cname">Kaze</div><div class="cdesc">Suikastçı</div></div>
+        <div class="char-card" onclick="pick(this,'🌟','Sirius')"><span class="cemoji">🌟</span><div class="cname">Sirius</div><div class="cdesc">Kontrolcü</div></div>
+        <div class="char-card" onclick="pick(this,'⚔️','Kenji')"><span class="cemoji">⚔️</span><div class="cname">Kenji</div><div class="cdesc">Suikastçı</div></div>
+        <div class="char-card" onclick="pick(this,'🐻','Nita')"><span class="cemoji">🐻</span><div class="cname">Nita</div><div class="cdesc">Hasar</div></div>
+        <div class="char-card" onclick="pick(this,'💎','Tara')"><span class="cemoji">💎</span><div class="cname">Tara</div><div class="cdesc">Hasar</div></div>
+        <div class="char-card" onclick="pick(this,'🎭','Mortis')"><span class="cemoji">🎭</span><div class="cname">Mortis</div><div class="cdesc">Suikastçı</div></div>
+        <div class="char-card" onclick="pick(this,'🐦','Crow')"><span class="cemoji">🐦</span><div class="cname">Crow</div><div class="cdesc">Suikastçı</div></div>
+        <div class="char-card" onclick="pick(this,'🌊','Sandy')"><span class="cemoji">🌊</span><div class="cname">Sandy</div><div class="cdesc">Kontrolcü</div></div>
+        <div class="char-card" onclick="pick(this,'🧲','Gene')"><span class="cemoji">🧲</span><div class="cname">Gene</div><div class="cdesc">Kontrolcü</div></div>
+        <div class="char-card" onclick="pick(this,'🌸','Max')"><span class="cemoji">🌸</span><div class="cname">Max</div><div class="cdesc">Destek</div></div>
+        <div class="char-card" onclick="pick(this,'⚡','Bibi')"><span class="cemoji">⚡</span><div class="cname">Bibi</div><div class="cdesc">Tank</div></div>
+        <div class="char-card" onclick="pick(this,'🎵','Poco')"><span class="cemoji">🎵</span><div class="cname">Poco</div><div class="cdesc">Destek</div></div>
+        <div class="char-card" onclick="pick(this,'🌿','Rosa')"><span class="cemoji">🌿</span><div class="cname">Rosa</div><div class="cdesc">Tank</div></div>
+        <div class="char-card" onclick="pick(this,'🍺','Barley')"><span class="cemoji">🍺</span><div class="cname">Barley</div><div class="cdesc">Topçu</div></div>
+        <div class="char-card" onclick="pick(this,'💣','Dynamike')"><span class="cemoji">💣</span><div class="cname">Dynamike</div><div class="cdesc">Topçu</div></div>
+        <div class="char-card" onclick="pick(this,'🔧','Jessie')"><span class="cemoji">🔧</span><div class="cname">Jessie</div><div class="cdesc">Kontrolcü</div></div>
+        <div class="char-card" onclick="pick(this,'🎪','El Primo')"><span class="cemoji">🎪</span><div class="cname">El Primo</div><div class="cdesc">Tank</div></div>
+        <div class="char-card" onclick="pick(this,'🎯','Bo')"><span class="cemoji">🎯</span><div class="cname">Bo</div><div class="cdesc">Kontrolcü</div></div>
+        <div class="char-card" onclick="pick(this,'🏍️','Darryl')"><span class="cemoji">🏍️</span><div class="cname">Darryl</div><div class="cdesc">Tank</div></div>
+        <div class="char-card" onclick="pick(this,'💰','Penny')"><span class="cemoji">💰</span><div class="cname">Penny</div><div class="cdesc">Topçu</div></div>
+        <div class="char-card" onclick="pick(this,'🪨','Carl')"><span class="cemoji">🪨</span><div class="cname">Carl</div><div class="cdesc">Hasar</div></div>
+        <div class="char-card" onclick="pick(this,'🔬','8-Bit')"><span class="cemoji">🔬</span><div class="cname">8-Bit</div><div class="cdesc">Hasar</div></div>
+        <div class="char-card" onclick="pick(this,'🌺','Emz')"><span class="cemoji">🌺</span><div class="cname">Emz</div><div class="cdesc">Kontrolcü</div></div>
+        <div class="char-card" onclick="pick(this,'🧪','Tick')"><span class="cemoji">🧪</span><div class="cname">Tick</div><div class="cdesc">Topçu</div></div>
+        <div class="char-card" onclick="pick(this,'🌴','Sprout')"><span class="cemoji">🌴</span><div class="cname">Sprout</div><div class="cdesc">Topçu</div></div>
+        <div class="char-card" onclick="pick(this,'🐝','Bea')"><span class="cemoji">🐝</span><div class="cname">Bea</div><div class="cdesc">Nişancı</div></div>
+        <div class="char-card" onclick="pick(this,'🦷','Nani')"><span class="cemoji">🦷</span><div class="cname">Nani</div><div class="cdesc">Nişancı</div></div>
+        <div class="char-card" onclick="pick(this,'🎩','Mr. P')"><span class="cemoji">🎩</span><div class="cname">Mr. P</div><div class="cdesc">Kontrolcü</div></div>
+        <div class="char-card" onclick="pick(this,'🐾','Leon')"><span class="cemoji">🐾</span><div class="cname">Gale</div><div class="cdesc">Kontrolcü</div></div>
+        <div class="char-card" onclick="pick(this,'🧊','Lou')"><span class="cemoji">🧊</span><div class="cname">Lou</div><div class="cdesc">Kontrolcü</div></div>
+        <div class="char-card" onclick="pick(this,'🎤','Colette')"><span class="cemoji">🎤</span><div class="cname">Colette</div><div class="cdesc">Hasar</div></div>
+        <div class="char-card" onclick="pick(this,'🐊','Amber')"><span class="cemoji">🐊</span><div class="cname">Amber</div><div class="cdesc">Kontrolcü</div></div>
+        <div class="char-card" onclick="pick(this,'👾','Rico')"><span class="cemoji">👾</span><div class="cname">Rico</div><div class="cdesc">Hasar</div></div>
+        <div class="char-card" onclick="pick(this,'🏠','Jacky')"><span class="cemoji">🏠</span><div class="cname">Jacky</div><div class="cdesc">Tank</div></div>
+        <div class="char-card" onclick="pick(this,'🧬','Byron')"><span class="cemoji">🧬</span><div class="cname">Byron</div><div class="cdesc">Destek</div></div>
+        <div class="char-card" onclick="pick(this,'💊','Squeak')"><span class="cemoji">💊</span><div class="cname">Squeak</div><div class="cdesc">Kontrolcü</div></div>
+        <div class="char-card" onclick="pick(this,'🐱','Surge')"><span class="cemoji">🐱</span><div class="cname">Surge</div><div class="cdesc">Hasar</div></div>
+        <div class="char-card" onclick="pick(this,'🌙','Pam')"><span class="cemoji">🌙</span><div class="cname">Pam</div><div class="cdesc">Destek</div></div>
+        <div class="char-card" onclick="pick(this,'🦋','Belle')"><span class="cemoji">🦋</span><div class="cname">Belle</div><div class="cdesc">Nişancı</div></div>
+        <div class="char-card" onclick="pick(this,'🐙','Otis')"><span class="cemoji">🐙</span><div class="cname">Otis</div><div class="cdesc">Kontrolcü</div></div>
+        <div class="char-card" onclick="pick(this,'🔔','Sam')"><span class="cemoji">🔔</span><div class="cname">Sam</div><div class="cdesc">Suikastçı</div></div>
+        <div class="char-card" onclick="pick(this,'🐝','Lola')"><span class="cemoji">🌠</span><div class="cname">Lola</div><div class="cdesc">Hasar</div></div>
+        <div class="char-card" onclick="pick(this,'🦿','Ruffs')"><span class="cemoji">🦿</span><div class="cname">Ruffs</div><div class="cdesc">Destek</div></div>
+        <div class="char-card" onclick="pick(this,'🐍','Eve')"><span class="cemoji">🐍</span><div class="cname">Eve</div><div class="cdesc">Hasar</div></div>
+        <div class="char-card" onclick="pick(this,'🎻','Janet')"><span class="cemoji">🎻</span><div class="cname">Janet</div><div class="cdesc">Nişancı</div></div>
+        <div class="char-card" onclick="pick(this,'🛡️','Ash')"><span class="cemoji">🛡️</span><div class="cname">Ash</div><div class="cdesc">Tank</div></div>
+        <div class="char-card" onclick="pick(this,'🐢','Bonnie')"><span class="cemoji">🐢</span><div class="cname">Bonnie</div><div class="cdesc">Nişancı</div></div>
+        <div class="char-card" onclick="pick(this,'👊','Fang')"><span class="cemoji">👊</span><div class="cname">Fang</div><div class="cdesc">Suikastçı</div></div>
+        <div class="char-card" onclick="pick(this,'🌙','Gray')"><span class="cemoji">🌑</span><div class="cname">Gray</div><div class="cdesc">Destek</div></div>
+        <div class="char-card" onclick="pick(this,'🐛','Charlie')"><span class="cemoji">🐛</span><div class="cname">Charlie</div><div class="cdesc">Kontrolcü</div></div>
+        <div class="char-card" onclick="pick(this,'🏔️','Maisie')"><span class="cemoji">🏔️</span><div class="cname">Maisie</div><div class="cdesc">Nişancı</div></div>
+        <div class="char-card" onclick="pick(this,'🎷','Hank')"><span class="cemoji">🎷</span><div class="cname">Hank</div><div class="cdesc">Tank</div></div>
+        <div class="char-card" onclick="pick(this,'🌀','Cordelius')"><span class="cemoji">🌀</span><div class="cname">Cordelius</div><div class="cdesc">Suikastçı</div></div>
+        <div class="char-card" onclick="pick(this,'🌸','Mandy')"><span class="cemoji">🌷</span><div class="cname">Mandy</div><div class="cdesc">Nişancı</div></div>
+        <div class="char-card" onclick="pick(this,'🛺','Doug')"><span class="cemoji">🛺</span><div class="cname">Doug</div><div class="cdesc">Destek</div></div>
+        <div class="char-card" onclick="pick(this,'⚙️','R-T')"><span class="cemoji">⚙️</span><div class="cname">R-T</div><div class="cdesc">Hasar</div></div>
+        <div class="char-card" onclick="pick(this,'🌊','Chuck')"><span class="cemoji">🚂</span><div class="cname">Chuck</div><div class="cdesc">Hasar</div></div>
+        <div class="char-card" onclick="pick(this,'🌈','Pearl')"><span class="cemoji">🌈</span><div class="cname">Pearl</div><div class="cdesc">Hasar</div></div>
+        <div class="char-card" onclick="pick(this,'🎪','Lily')"><span class="cemoji">🌹</span><div class="cname">Lily</div><div class="cdesc">Suikastçı</div></div>
+        <div class="char-card" onclick="pick(this,'🐉','Draco')"><span class="cemoji">🐉</span><div class="cname">Draco</div><div class="cdesc">Tank</div></div>
+        <div class="char-card" onclick="pick(this,'🦔','Angelo')"><span class="cemoji">🦔</span><div class="cname">Angelo</div><div class="cdesc">Nişancı</div></div>
+        <div class="char-card" onclick="pick(this,'🎆','Melodie')"><span class="cemoji">🎆</span><div class="cname">Melodie</div><div class="cdesc">Suikastçı</div></div>
+        <div class="char-card" onclick="pick(this,'🍊','Berry')"><span class="cemoji">🍊</span><div class="cname">Berry</div><div class="cdesc">Destek</div></div>
+        <div class="char-card" onclick="pick(this,'🐠','Clancy')"><span class="cemoji">🐠</span><div class="cname">Clancy</div><div class="cdesc">Hasar</div></div>
+        <div class="char-card" onclick="pick(this,'🎃','Chester')"><span class="cemoji">🎃</span><div class="cname">Chester</div><div class="cdesc">Hasar</div></div>
+        <div class="char-card" onclick="pick(this,'🦴','Grom')"><span class="cemoji">🦴</span><div class="cname">Grom</div><div class="cdesc">Topçu</div></div>
+        <div class="char-card" onclick="pick(this,'🌻','Willow')"><span class="cemoji">🌻</span><div class="cname">Willow</div><div class="cdesc">Kontrolcü</div></div>
+        <div class="char-card" onclick="pick(this,'🧸','Gus')"><span class="cemoji">🧸</span><div class="cname">Gus</div><div class="cdesc">Destek</div></div>
+        <div class="char-card" onclick="pick(this,'🐟','Piper')"><span class="cemoji">🎀</span><div class="cname">Piper</div><div class="cdesc">Nişancı</div></div>
+        <div class="char-card" onclick="pick(this,'🦈','Stu')"><span class="cemoji">🦈</span><div class="cname">Stu</div><div class="cdesc">Suikastçı</div></div>
+        <div class="char-card" onclick="pick(this,'🧩','Buzz')"><span class="cemoji">🧩</span><div class="cname">Buzz</div><div class="cdesc">Suikastçı</div></div>
+        <div class="char-card" onclick="pick(this,'🤡','Griff')"><span class="cemoji">🤡</span><div class="cname">Griff</div><div class="cdesc">Kontrolcü</div></div>
+        <div class="char-card" onclick="pick(this,'🎠','Buster')"><span class="cemoji">🎠</span><div class="cname">Buster</div><div class="cdesc">Tank</div></div>
+        <div class="char-card" onclick="pick(this,'🦉','Larry&Lawrie')"><span class="cemoji">🦉</span><div class="cname">Larry & Lawrie</div><div class="cdesc">Topçu</div></div>
+        <div class="char-card" onclick="pick(this,'🪐','Meg')"><span class="cemoji">🪐</span><div class="cname">Meg</div><div class="cdesc">Tank</div></div>
+        <div class="char-card" onclick="pick(this,'🐸','Buzz Lightyear')"><span class="cemoji">🚀</span><div class="cname">Buzz Lightyear</div><div class="cdesc">Hasar</div></div>
+        <div class="char-card" onclick="pick(this,'🌴','Moe')"><span class="cemoji">🦠</span><div class="cname">Moe</div><div class="cdesc">Hasar</div></div>
+        <div class="char-card" onclick="pick(this,'🎯','Mico')"><span class="cemoji">🐒</span><div class="cname">Mico</div><div class="cdesc">Suikastçı</div></div>
+        <div class="char-card" onclick="pick(this,'🐈','Kit')"><span class="cemoji">🐈</span><div class="cname">Kit</div><div class="cdesc">Destek</div></div>
+        <div class="char-card" onclick="pick(this,'🌊','Juju')"><span class="cemoji">🥁</span><div class="cname">Juju</div><div class="cdesc">Topçu</div></div>
+        <div class="char-card" onclick="pick(this,'🎲','Meeple')"><span class="cemoji">🎲</span><div class="cname">Meeple</div><div class="cdesc">Kontrolcü</div></div>
+        <div class="char-card" onclick="pick(this,'🦊','Finx')"><span class="cemoji">🦩</span><div class="cname">Finx</div><div class="cdesc">Kontrolcü</div></div>
+        <div class="char-card" onclick="pick(this,'🏹','Alli')"><span class="cemoji">🏹</span><div class="cname">Alli</div><div class="cdesc">Suikastçı</div></div>
+        <div class="char-card" onclick="pick(this,'💡','Glowy')"><span class="cemoji">💡</span><div class="cname">Glowy</div><div class="cdesc">Destek</div></div>
+        <div class="char-card" onclick="pick(this,'🌊','Lumi')"><span class="cemoji">🌊</span><div class="cname">Lumi</div><div class="cdesc">Hasar</div></div>
+        <div class="char-card" onclick="pick(this,'🎮','Gigi')"><span class="cemoji">🎮</span><div class="cname">Gigi</div><div class="cdesc">Suikastçı</div></div>
+        <div class="char-card" onclick="pick(this,'🏄','Shade')"><span class="cemoji">🏄</span><div class="cname">Shade</div><div class="cdesc">Suikastçı</div></div>
+        <div class="char-card" onclick="pick(this,'🍀','Mina')"><span class="cemoji">🍀</span><div class="cname">Mina</div><div class="cdesc">Hasar</div></div>
+        <div class="char-card" onclick="pick(this,'🌿','Ollie')"><span class="cemoji">🎋</span><div class="cname">Ollie</div><div class="cdesc">Tank</div></div>
+        <div class="char-card" onclick="pick(this,'🎯','Trunk')"><span class="cemoji">🐘</span><div class="cname">Trunk</div><div class="cdesc">Tank</div></div>
+        <div class="char-card" onclick="pick(this,'🔮','Ziggy')"><span class="cemoji">🔮</span><div class="cname">Ziggy</div><div class="cdesc">Kontrolcü</div></div>
+        <div class="char-card" onclick="pick(this,'🎯','Jae-yong')"><span class="cemoji">🥊</span><div class="cname">Jae-yong</div><div class="cdesc">Destek</div></div>
+        <div class="char-card" onclick="pick(this,'🏹','Pierce')"><span class="cemoji">🗡️</span><div class="cname">Pierce</div><div class="cdesc">Nişancı</div></div>
+        <div class="char-card" onclick="pick(this,'🌟','Najia')"><span class="cemoji">⭐</span><div class="cname">Najia</div><div class="cdesc">Hasar</div></div>
+      </div>
+      <button class="start-btn" id="sbtn" disabled onclick="startGame()">Karakterini seç!</button>
+    </div>
+  </div>
+
+  <!-- OYUN -->
+  <div class="screen" id="s-oyun">
+    <div class="hud">
+      <div class="hchar" id="hchar">🤠</div>
+      <div><div class="hname" id="hname">Shelly</div><div class="hlvl" id="hlvl">Seviye 1</div></div>
+      <div class="hmid"><div class="hsoru" id="hsoru">Soru 1/10</div><div class="hpuan" id="hpuan">⭐ 0</div></div>
+      <div class="hright">
+        <div class="can-row">
+          <span class="can" id="c1">❤️</span>
+          <span class="can" id="c2">❤️</span>
+          <span class="can" id="c3">❤️</span>
+        </div>
+        <div class="timer-wrap">⏱ <span id="tmr">20</span></div>
+      </div>
+    </div>
+    <div class="xpbar"><div class="xpfill" id="xpf" style="width:0%"></div></div>
+    <div class="arena">
+      <div class="lvl-row">
+        <span class="lvl-pill" id="lpill">Seviye 1</span>
+        <span class="konu-pill" id="kpill">Çarpma</span>
+      </div>
+      <div class="soru-box">
+        <span class="cbig" id="cbig">🤠</span>
+        <div id="saat-svg" style="display:none;margin:0 auto 10px;"></div>
+        <div class="stxt" id="stxt">Yükleniyor...</div>
+      </div>
+      <div class="cevaplar" id="cevaplar"></div>
+      <div class="fb" id="fb"></div>
+    </div>
+  </div>
+
+  <!-- LEVEL UP -->
+  <div class="screen" id="s-levelup">
+    <div class="mid-screen">
+      <div style="font-size:70px;" class="pop-anim">🏆</div>
+      <div class="mtitle">SEVİYE ATLADI!</div>
+      <div class="mstars" id="lu-stars">⭐⭐</div>
+      <div class="msub" id="lu-sub">Harika gidiyorsun!</div>
+      <button class="mbtn mbtn-blue" onclick="devam()">Devam et →</button>
+    </div>
+  </div>
+
+  <!-- GAME OVER -->
+  <div class="screen" id="s-gameover">
+    <div class="mid-screen">
+      <div style="font-size:70px;">💀</div>
+      <div class="mtitle red">OYUN BİTTİ!</div>
+      <div class="msub">Toplam puan</div>
+      <div style="font-size:52px;font-weight:800;color:var(--gold)" id="go-puan">0</div>
+      <div class="msub">Tekrar dene ve daha yüksek puan al!</div>
+      <button class="mbtn mbtn-red" onclick="reset()">🔄 Tekrar oyna</button>
+    </div>
+  </div>
+
+  <!-- BİTİŞ -->
+  <div class="screen" id="s-bitis">
+    <div class="mid-screen">
+      <div style="font-size:70px;" class="pop-anim">🥇</div>
+      <div class="mtitle">TEBRİKLER METE!</div>
+      <div class="mstars" id="b-stars">⭐⭐⭐</div>
+      <div class="stats-grid">
+        <div><div class="snum" id="b-puan">0</div><div class="slbl">Toplam puan</div></div>
+        <div><div class="snum" id="b-dogru">0/10</div><div class="slbl">Doğru cevap</div></div>
+        <div><div class="snum" id="b-hiz">-</div><div class="slbl">En hızlı cevap</div></div>
+        <div><div class="snum" id="b-lvl">1</div><div class="slbl">Max seviye</div></div>
+      </div>
+      <button class="mbtn mbtn-gold" onclick="reset()">🔄 Tekrar oyna</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SORULAR=[
+  {s:'Hüseyin evden okula 15 dakika yürüyor. Saat 08.00\'de okulda. Evden saat kaçta çıktı?',c:'7.45',y:['8.45','7.15','8.15'],k:'Zaman',lv:1,saat:{h:7,m:45}},
+  {s:'Basketbol kursu saat 11.00\'de başlıyor ve 75 dakika sürüyor. Saat kaçta biter?',c:'12.15',y:['12.05','12.10','11.75'],k:'Zaman',lv:1,saat:{h:12,m:15}},
+  {s:'Güngör gitar kursundan çıktıktan 15 dakika sonra eve gidiyor. Gitar kursu 13.25\'te bitti. Eve saat kaçta gider?',c:'13.40',y:['13.50','12.40','13.35'],k:'Zaman',lv:1,saat:{h:13,m:40}},
+  {s:'3 yarım saat ve 6 çeyrek saatlik süre toplamı kaç saattir?',c:'3 saat',y:['2 saat 15 dakika','3 saat 45 dakika','4 saat'],k:'Zaman',lv:2,saat:{h:3,m:0}},
+  {s:'Ahmet saat 6.15\'te yola çıktı. Yolculukları 12 saat 25 dakika sürdü. Köye saat kaçta ulaştılar?',c:'18.40',y:['18.30','18.50','19.40'],k:'Zaman',lv:2,saat:{h:18,m:40}},
+  {s:'Bir futbol maçı 45 dakikalık 2 bölüm + 15 dakika ara. Toplam maç ne kadar sürer?',c:'1 saat 45 dakika',y:['2 saat 45 dakika','3 saat 15 dakika','1 saat 30 dakika'],k:'Zaman',lv:2,saat:{h:1,m:45}},
+  {s:'Basketbol kursu 12.15\'te bitti. 20 dakika sonra gitar kursu başladı. Gitar kursu saat kaçta başladı?',c:'12.35',y:['12.25','12.45','13.05'],k:'Zaman',lv:2,saat:{h:12,m:35}},
+  {s:'Gitar kursu 12.35\'te başladı ve 50 dakika sürdü. Saat kaçta bitti?',c:'13.25',y:['13.15','13.35','12.85'],k:'Zaman',lv:2,saat:{h:13,m:25}},
+  {s:'Film saat 16.00\'da başladı, 95 dakika sürdü. Film kaçta bitti?',c:'17.35',y:['17.38','17.40','17.50'],k:'Zaman',lv:3,saat:{h:17,m:35}},
+  {s:'95 dakikalık filmde 5 tane 3 dakikalık reklam verildi. Reklamlarla birlikte film kaçta biter? (16.00\'da başladı)',c:'17.50',y:['17.38','17.40','17.35'],k:'Zaman',lv:3,saat:{h:17,m:50}},
+  {s:'Ahmet 6.15\'te yola çıktı, 12 saat 25 dakika yolculuk yaptı. Varış saati kaçtır?',c:'18.40',y:['18.30','18.50','19.40'],k:'Zaman',lv:3,saat:{h:18,m:40}},
+  {s:'Bir maç 45+45 dakika + 15 dakika ara + 10 dakika uzatma sürüyor. Toplam kaç dakika?',c:'115',y:['105','110','120'],k:'Zaman',lv:3,saat:{h:1,m:55}},
+  {s:'1 saat 26 dakika antrenman yapan sporcu kaç dakika antrenman yapmıştır?',c:'86',y:['126','96','76'],k:'Zaman',lv:1,saat:{h:1,m:26}},
+  {s:'135 dakikalık süre aşağıdakilerden hangisine eşittir?',c:'2 saat 15 dakika',y:['1 saat 35 dakika','1 saat 55 dakika','2 saat 5 dakika'],k:'Zaman',lv:2,saat:{h:2,m:15}},
+  {s:'Basketbol maçı: 4 devre × 15 dakika + 3 ara × 10 dakika. Toplam süre kaçtır?',c:'1 saat 30 dakika',y:['1 saat 40 dakika','1 saat 10 dakika','2 saat'],k:'Zaman',lv:2,saat:{h:1,m:30}},
+  {s:'Sabah 8.00\'de evden çıkan Mehmet Bey 135 dakika sonra eve geldi. Saat kaçtır?',c:'10.15',y:['11.20','12.14','10.05'],k:'Zaman',lv:2,saat:{h:10,m:15}},
+  {s:'Havva 2 çeyrek saat ve 1 yarım saat kitap okudu. Toplam kaç dakika okudu?',c:'60',y:['40','90','30'],k:'Zaman',lv:2,saat:{h:1,m:0}},
+  {s:'Film 11.45\'te başladı, 13.15\'te bitti. 10 dakika mola verildi. Film kaç dakikadır?',c:'80',y:['85','90','70'],k:'Zaman',lv:3,saat:{h:1,m:30}},
+  {s:'Otobüs 07.30\'da kalktı, 10.30\'da vardı. Yolculuk kaç dakika sürdü?',c:'180',y:['135','160','200'],k:'Zaman',lv:3,saat:{h:3,m:0}},
+  {s:'Otobüs 08.00\'de kalktı, 10.15\'te vardı. Yolculuk kaç dakika sürdü?',c:'135',y:['115','145','125'],k:'Zaman',lv:3,saat:{h:2,m:15}},
+  {s:'Otobüs 09.30\'da kalktı, 11.30\'da vardı. Yolculuk kaç dakika sürdü?',c:'120',y:['90','135','150'],k:'Zaman',lv:3,saat:{h:2,m:0}},
+];
+
+let char=null,canlar=3,puan=0,qIdx=0,dogru=0,tmrInt=null,tVal=20,enHiz=99,qStart=0;
+
+function pick(el,emoji,name){
+  document.querySelectorAll('.char-card').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');char={emoji,name};
+  const b=document.getElementById('sbtn');
+  b.disabled=false;b.textContent=name+' ile oyna!';
+}
+
+function startGame(){
+  if(!char)return;
+  ['hchar','cbig'].forEach(id=>document.getElementById(id).textContent=char.emoji);
+  document.getElementById('hname').textContent=char.name;
+  gs('s-oyun');soruGoster();
+}
+
+function saatSVG(h, m) {
+  const r = 70, cx = 80, cy = 80;
+  const mAc = ((m / 60) * 360 - 90) * Math.PI / 180;
+  const hAc = (((h % 12) + m / 60) / 12 * 360 - 90) * Math.PI / 180;
+  const mx = cx + r * 0.85 * Math.cos(mAc), my = cy + r * 0.85 * Math.sin(mAc);
+  const hx = cx + r * 0.55 * Math.cos(hAc), hy = cy + r * 0.55 * Math.sin(hAc);
+  let nums = '';
+  for(let i=1;i<=12;i++){
+    const a=(i/12*360-90)*Math.PI/180;
+    nums+=`<text x="${cx+r*0.75*Math.cos(a)}" y="${cy+r*0.75*Math.sin(a)+5}" text-anchor="middle" fill="#fff" font-size="10" font-weight="800" font-family="Nunito,sans-serif">${i}</text>`;
+  }
+  return `<svg width="160" height="160" viewBox="0 0 160 160">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="#1a2634" stroke="#FFD93D" stroke-width="3"/>
+    <circle cx="${cx}" cy="${cy}" r="${r*0.85}" fill="none" stroke="#2a3f55" stroke-width="1"/>
+    ${nums}
+    <line x1="${cx}" y1="${cy}" x2="${hx}" y2="${hy}" stroke="#FFD93D" stroke-width="4" stroke-linecap="round"/>
+    <line x1="${cx}" y1="${cy}" x2="${mx}" y2="${my}" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="${cx}" cy="${cy}" r="4" fill="#FFD93D"/>
+  </svg>`;
+}
+
+function soruGoster(){
+  if(qIdx>=SORULAR.length){bitisEkrani();return;}
+  clearInterval(tmrInt);
+  const s=SORULAR[qIdx];
+  document.getElementById('hsoru').textContent='Soru '+(qIdx+1)+'/'+SORULAR.length;
+  document.getElementById('hlvl').textContent='Seviye '+s.lv;
+  document.getElementById('lpill').textContent='Seviye '+s.lv;
+  document.getElementById('kpill').textContent=s.k;
+  document.getElementById('stxt').textContent=s.s;
+  document.getElementById('fb').style.display='none';
+  document.getElementById('xpf').style.width=(qIdx/SORULAR.length*100)+'%';
+  const saatDiv=document.getElementById('saat-svg');
+  const cbig=document.getElementById('cbig');
+  if(s.saat){
+    saatDiv.style.display='block';
+    saatDiv.innerHTML=saatSVG(s.saat.h,s.saat.m);
+    cbig.style.display='none';
+  } else {
+    saatDiv.style.display='none';
+    cbig.style.display='block';
+  }
+  const opts=shuf([s.c,...s.y.slice(0,3)]);
+  const div=document.getElementById('cevaplar');div.innerHTML='';
+  opts.forEach(o=>{
+    const b=document.createElement('button');
+    b.className='cbtn';
+    b.style.fontSize='14px';
+    b.textContent=o;
+    b.onclick=()=>cevapla(b,String(o)===String(s.c),s.c);
+    div.appendChild(b);
+  });
+  tVal=45;qStart=Date.now();
+  document.getElementById('tmr').textContent=45;
+  document.getElementById('tmr').className='';
+  tmrInt=setInterval(()=>{
+    tVal--;
+    document.getElementById('tmr').textContent=tVal;
+    if(tVal<=5)document.getElementById('tmr').className='urgent';
+    if(tVal<=0){clearInterval(tmrInt);sureBitti();}
+  },1000);
+}
+
+function sureBitti(){
+  canKaybet();showFb(false,'⏱ Süre doldu! Dikkatli ol!');
+  document.querySelectorAll('.cbtn').forEach(b=>b.disabled=true);
+  setTimeout(()=>{qIdx++;soruGoster();},1600);
+}
+
+function cevapla(btn,isDogru,dogruC){
+  clearInterval(tmrInt);
+  const sure=Math.round((Date.now()-qStart)/1000);
+  if(sure<enHiz)enHiz=sure;
+  document.querySelectorAll('.cbtn').forEach(b=>{
+    b.disabled=true;
+    if(String(b.textContent)===String(dogruC))b.classList.add('dogru');
+  });
+  if(isDogru){
+    const bonus=tVal>25?20:10;puan+=bonus;dogru++;
+    document.getElementById('hpuan').textContent='⭐ '+puan;
+    showFb(true,'🎉 Doğru! +'+bonus+' puan ('+sure+'sn)');
+    if((qIdx+1)%4===0&&qIdx+1<SORULAR.length){
+      setTimeout(()=>levelUp(),1000);qIdx++;return;
+    }
+  } else {
+    btn.classList.add('yanlis');
+    showFb(false,'❌ Yanlış! Doğru cevap: '+dogruC);
+    canKaybet();
+    if(canlar<=0){setTimeout(()=>gameOver(),1300);qIdx++;return;}
+  }
+  qIdx++;setTimeout(()=>soruGoster(),1500);
+}
+
+function showFb(ok,msg){
+  const el=document.getElementById('fb');
+  el.style.display='block';el.className='fb '+(ok?'dogru':'yanlis');el.textContent=msg;
+}
+
+function canKaybet(){
+  if(canlar>0){document.getElementById('c'+canlar).classList.add('lost');canlar--;}
+}
+
+function levelUp(){
+  gs('s-levelup');
+  const lv=Math.floor(qIdx/4)+1;
+  document.getElementById('lu-sub').textContent=char.name+' güçleniyor! Seviye '+lv+"'e hoş geldin!";
+  document.getElementById('lu-stars').textContent='⭐'.repeat(Math.min(lv,5));
+}
+
+function devam(){
+  gs('s-oyun');
+  ['hchar','cbig'].forEach(id=>document.getElementById(id).textContent=char.emoji);
+  soruGoster();
+}
+
+function gameOver(){
+  clearInterval(tmrInt);gs('s-gameover');
+  document.getElementById('go-puan').textContent=puan;
+}
+
+function bitisEkrani(){
+  clearInterval(tmrInt);gs('s-bitis');
+  const y=dogru>=9?'⭐⭐⭐':dogru>=6?'⭐⭐':'⭐';
+  document.getElementById('b-stars').textContent=y;
+  document.getElementById('b-puan').textContent=puan;
+  document.getElementById('b-dogru').textContent=dogru+'/'+SORULAR.length;
+  document.getElementById('b-hiz').textContent=enHiz===99?'-':enHiz+'sn';
+  document.getElementById('b-lvl').textContent=SORULAR[Math.min(qIdx-1,SORULAR.length-1)].lv;
+}
+
+function reset(){
+  canlar=3;puan=0;qIdx=0;dogru=0;enHiz=99;char=null;
+  clearInterval(tmrInt);
+  ['c1','c2','c3'].forEach(id=>document.getElementById(id).classList.remove('lost'));
+  document.getElementById('hpuan').textContent='⭐ 0';
+  document.getElementById('xpf').style.width='0%';
+  document.querySelectorAll('.char-card').forEach(c=>c.classList.remove('sel'));
+  const b=document.getElementById('sbtn');b.disabled=true;b.textContent='Karakterini seç!';
+  gs('s-char');
+}
+
+function gs(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function shuf(a){return a.sort(()=>Math.random()-.5);}
+</script>
+</body>
+</html>
